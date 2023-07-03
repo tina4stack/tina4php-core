@@ -7,13 +7,18 @@
  */
 
 namespace Tina4;
+
+
+//Get the sub folders etc using the data class
+(new Data());
+
 /**
  * Initialize function loads the library for use
  */
 function Initialize(): void
 {
-    if (file_exists("./Tina4/Initialize.php")) {
-        require_once "./Tina4/Initialize.php";
+    if (defined("TINA4_PROJECT_ROOT") && file_exists(TINA4_PROJECT_ROOT. DIRECTORY_SEPARATOR. "tina4php". DIRECTORY_SEPARATOR. "Tina4". DIRECTORY_SEPARATOR ."Initialize.php")) {
+        require_once TINA4_PROJECT_ROOT. DIRECTORY_SEPARATOR. "tina4php". DIRECTORY_SEPARATOR. "Tina4". DIRECTORY_SEPARATOR ."Initialize.php";
     } else {
         require_once __DIR__."/Initialize.php";
     }
