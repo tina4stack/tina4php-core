@@ -15,6 +15,10 @@
       ]
     }
   },
+  "bin": [
+    "bin/tina4",
+    "bin/tina4service"
+  ],
   "scripts": {
     "start": "php -S localhost:7147 index.php",
     "test": "./vendor/bin/phpunit tests -vvv --color --log-junit=tests/junit.xml",
