@@ -42,6 +42,10 @@ class Data
                 $this->subFolder = $this->getSubFolder($this->documentRoot);
             }
 
+            //remove core from the project folder - we want the root of the tina4stack libraries
+            $this->projectRoot = str_replace("tina4php-core".DIRECTORY_SEPARATOR, "", $this->projectRoot);
+
+
             define("TINA4_DOCUMENT_ROOT", $this->documentRoot);
             define("TINA4_PROJECT_ROOT", $this->projectRoot);
         } else {

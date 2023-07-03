@@ -3,6 +3,9 @@
   "description": "Tina4 PHP Core Functionality",
   "license": "MIT",
   "autoload": {
+    "files": [
+      "Tina4/Functions.php"
+    ],
     "classmap": [
       "Tina4/"
     ],
