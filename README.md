@@ -3,7 +3,7 @@
 ### Installing
 
 ```
-composer install tina4stack/tina4php-core
+composer require tina4stack/tina4php-core
 ```
 
 Core functionality for Tina4 documented below
