@@ -25,6 +25,7 @@ trait Utility
     {
         $ext = pathinfo($fileName, PATHINFO_EXTENSION);
         switch ($ext) {
+            case "webp":
             case "png":
             case "jpeg":
             case "ico":
