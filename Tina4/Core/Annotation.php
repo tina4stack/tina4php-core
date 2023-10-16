@@ -31,8 +31,6 @@ class Annotation
 
         $annotations = [];
 
-
-
         //Get annotations for each function
         foreach ($functions as $id => $function) {
             $annotations = array_merge($annotations, $this->getFunctionAnnotations($function, $annotationName));

@@ -394,11 +394,15 @@ trait Utility
         }
     }
 
+    /**
+     * Gets a GUID
+     * @return string
+     */
     final function getGUID()
     {
         if (function_exists('com_create_guid') === true)
         {
-            return strtoupper(trim(com_create_guid(), '{}'));
+            return strtoupper(trim(\com_create_guid(), '{}'));
         }
 
         $strong = "";
