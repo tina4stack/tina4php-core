@@ -41,7 +41,6 @@ class Test
      */
     public function run(bool $onlyShowFailed = true, array $testGroups = []): void
     {
-
         //Find all the functions and classes with annotated methods
         //Look for test annotations
         $annotation = new Annotation();
@@ -69,8 +68,12 @@ class Test
                 }
                 // No groups were appended to the test call
             } else {
+                if (!defined("TINA4_DOCUMENT_ROOT"))
+                {
+                    define("TINA4_DOCUMENT_ROOT", $this->rootPath);
+                }
                 // Include test unless a tina4 test is running in a tina4 Project
-                if (!in_array("tina4", $groupMember) || file_exists(TINA4_DOCUMENT_ROOT . "Tina4")) {
+                if (!in_array("tina4", $groupMember) || file_exists(\TINA4_DOCUMENT_ROOT . "Tina4")) {
                     $this->parseAnnotations($test, $onlyShowFailed);
                 }
             }
@@ -94,8 +97,6 @@ class Test
         $testCount = 0;
         $testFailed = 0;
 
-
-
         if ($annotations["type"] === "function") {
             $testResult .= $this->colorCyan . "Testing Function " . $annotations["method"] . $this->colorReset . PHP_EOL;
         } else {
@@ -113,8 +114,6 @@ class Test
                 eval('$this->testClass = new ' . $annotations["class"] . '(' . implode(",", $params) . ');');
             }
         }
-
-
 
         foreach ($tests as $tid => $test) {
             $test = trim($test);
@@ -157,9 +156,8 @@ class Test
      * @param bool $isStatic
      * @return string
      */
-    public function runTest($testNo, $test, $method, $testClass = null, $isStatic = false)
+    public function runTest($testNo, $test, $method, $testClass = null, bool $isStatic = false): string
     {
-
         preg_match_all('/^(assert)(.*),(.*)$/m', $test, $testParts, PREG_SET_ORDER);
         if (empty($testParts)) {
             return "";
@@ -219,7 +217,6 @@ class Test
                         $condition = str_replace(" ==", ") ==", $condition);
                     }
 
-
                     eval('$actualResult = str_replace(PHP_EOL, "", print_r($testClass->' . $method . $actualExpression . ', 1));');
                 } elseif ($condition[0] === '$' && strpos($condition, '$testClass') === false) {
                     if ($isStatic) {
@@ -264,13 +261,13 @@ class Test
      * @param $condition
      * @param string $message
      * @param string $conditionText
-     * @param string $actualResult
+     * @param mixed $actualResult
      * @param string $expectedResult
      * @return string
      * @tests tina4
      *   assert (1 === 1) === "\e[32;1mPassed ()\e[0m", "Test is positive"
      */
-    public function assert($condition, $message = "Test failed!", $conditionText = "", $actualResult = "", $expectedResult=""): string
+    public function assert($condition, string $message="", string $conditionText="", $actualResult="", $expectedResult=""): string
     {
         $result = false;
         if ($condition !== true && $condition !== false) {
