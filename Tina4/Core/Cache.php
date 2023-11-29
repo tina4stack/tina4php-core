@@ -36,10 +36,6 @@ class Cache
      */
     final public function set(string $keyName, $value, int $expires = 60): bool
     {
-        if (defined("TINA4_CACHE_ON") && !TINA4_CACHE_ON)
-        {
-            return true;
-        }
         if (!empty($this->cache)) {
             $cachedString = $this->cache->getItem($keyName);
             $cachedString->set($value)->expiresAfter($expires);
@@ -62,10 +58,6 @@ class Cache
      */
     final public function get(string $keyName)
     {
-        if (defined("TINA4_CACHE_ON") && !TINA4_CACHE_ON)
-        {
-            return null;
-        }
         if (!empty($this->cache)) {
             $cachedString = $this->cache->getItem($keyName);
             $cachedData = $cachedString->get();

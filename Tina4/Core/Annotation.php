@@ -101,7 +101,6 @@ class Annotation
         //clean *
         $docComment = preg_replace('/^.[\*|\/|\n|\ |\r]+|^(.*)\*/m', "", $docComment);
 
-
         $annotations = [];
         preg_match_all('/^@([^\n|\r\n|\t]+)/m', $docComment, $comments, PREG_OFFSET_CAPTURE, 0);
 
