@@ -42,7 +42,7 @@ trait Utility
                 $mimeType = "application/pdf";
                 break;
             case "js":
-                $mimeType = "application/javascript";
+                $mimeType = "text/javascript";
                 break;
             case "mp4":
                 $mimeType = "video/mp4";
