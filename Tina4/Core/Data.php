@@ -14,7 +14,7 @@ use Composer\Autoload\ClassLoader;
  * Extending this class makes any class "data" aware
  * @package Tina4
  */
-class Data
+class Data extends \StdClass
 {
 
     /** @var DataBase $DBA */
