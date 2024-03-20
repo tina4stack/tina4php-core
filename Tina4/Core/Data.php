@@ -16,13 +16,12 @@ use Composer\Autoload\ClassLoader;
  */
 class Data extends \StdClass
 {
-
     /** @var DataBase $DBA */
     public $DBA;
     public $cache;
     public string $projectRoot;
-    public $documentRoot;
-    public $subFolder;
+    public string $documentRoot;
+    public string $subFolder;
 
     /**
      * Data constructor
