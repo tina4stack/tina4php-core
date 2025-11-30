@@ -447,7 +447,7 @@ addMenu($menus, "webservice", "Runs webservice", static function ($index, $input
 
     \Tina4\Debug::message("Server running on http://{$host}:{$port}");
 
-    `php -S {$host}:{$port} index.php`;
+    shell_exec("php -S {$host}:{$port} index.php");
 
 }, true,  ["options" => ["run"]]);
 
