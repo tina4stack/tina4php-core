@@ -446,7 +446,14 @@ addMenu($menus, "webservice", "Runs webservice", static function ($index, $input
     }
 
     \Tina4\Debug::message("Server running on http://{$host}:{$port}");
-
+    echo "\e[36;1m"."
+████████╗██╗███╗   ██╗ █████╗ ██╗  ██╗
+╚══██╔══╝██║████╗  ██║██╔══██╗██║  ██║
+   ██║   ██║██╔██╗ ██║███████║███████║
+   ██║   ██║██║╚██╗██║██╔══██║╚════██║
+   ██║   ██║██║ ╚████║██║  ██║     ██║
+   ╚═╝   ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝     ╚═╝
+"."\e[0m";
     shell_exec("php -S {$host}:{$port} index.php");
 
 }, true,  ["options" => ["run"]]);
