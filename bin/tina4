@@ -49,17 +49,19 @@ function readLn($prefix = "")
     }
 }
 
-$menus[] = ["id" => 1, "name" => "initialize", "description" => "Create index.php", "commandLine" => ["options" => ["run"]], "menuCode" => static function ($index, $input, $options) {
+$initializeCode = static function ($index, $input, $options) {
     function configureComposerJson($composerFile)
     {
         $composer = json_decode(file_get_contents($composerFile), true);
         $scripts = ["tina4" => "tina4",
-            "tina4service" => "tina4service",
-            "test" => "@tina4 tests:run",
-            "test:verbose" => "@tina4 tests:verbose",
-            "initialize" => "@tina4 initialize:run",
-            "start" => "@tina4 webservice:run",
-            "start-service" => "@tina4service"];
+                "tina4service" => "tina4service",
+                "test" => "@tina4 tests:run",
+                "test:verbose" => "@tina4 tests:verbose",
+                "initialize" => "@tina4 initialize:run",
+                "start" => "@tina4 webservice:run",
+                "start-service" => "@tina4service",
+                "migrate" => "@tina4 migrate:run",
+                "migrate:create" => "@tina4 migrate:create"];
         $classMap = ["src/*", "src/app/*", "src/orm/*", "src/routes/*"];
         $psr4 = ["\\" => ["src/", "src/app/", "src/orm/", "src/routes"]];
         $config = ["process-timeout" => 0];
@@ -79,7 +81,7 @@ $menus[] = ["id" => 1, "name" => "initialize", "description" => "Create index.ph
     }
 
     if (!empty($options)) {
-        if ($options === "initialize:run") {
+        if ($options === "initialize:run" || $options === "init") {
             $index = 1;
             $input = "y";
 
@@ -163,7 +165,9 @@ SetEnvIf Authorization .+ HTTP_AUTHORIZATION=$0';
             break;
     }
     return ["index" => $nextIndex, "prompt" => $prompt];
-}];
+};
+
+$menus[] = ["id" => 1, "name" => "initialize", "description" => "Create index.php", "commandLine" => ["options" => ["run"]], "menuCode" => $initializeCode];
 
 
 $menus[] = ["id" => 2, "name" => "tests", "description" => "Run Tests", "commandLine" => ["options" => ["run", "verbose"]], "menuCode" => static function ($index, $input, $options) use ($argv) {
@@ -224,6 +228,28 @@ function createDatabaseConnection($databaseType, $databaseName, $databaseHost = 
     }
 
     return $indexContent;
+}
+
+function createMigration($rootPath, $name) {
+    $migrationsPath = $rootPath . 'migrations' . DIRECTORY_SEPARATOR;
+    if (!file_exists($migrationsPath)) {
+        mkdir($migrationsPath, 0755, true);
+    }
+    $migration = new \Tina4\Migration($migrationsPath);
+    $content = "-- Write your migration SQL here\n";
+    $result = $migration->createMigration($name, $content);
+    writeLine($result);
+}
+
+function runMigrations($rootPath, $DBA) {
+    $migrationsPath = $rootPath . 'migrations' . DIRECTORY_SEPARATOR;
+    if (!file_exists($migrationsPath)) {
+        writeLine("Migrations directory does not exist.");
+        return;
+    }
+    $migration = new \Tina4\Migration($migrationsPath, ";", "terminal");
+    $result = $migration->doMigration();
+    echo $result;
 }
 
 $menus[] = ["id" => 3, "name" => "database", "description" => "Create database connection", "menuCode" => static function ($index, $input) {
@@ -386,7 +412,7 @@ $menus[] = ["id" => 4, "name" => "orm", "description" => "Create ORM objects", "
                         $fields[] = "\tpublic \$" . $record->getObjectName($field->fieldName) . ";";
                     }
 
-                        $definition = '<?php
+                    $definition = '<?php
 class [CLASS_NAME] extends \Tina4\ORM
 {
     public $tableName="[TABLE_NAME]";
@@ -432,7 +458,54 @@ class [CLASS_NAME] extends \Tina4\ORM
     return ["index" => $nextIndex, "prompt" => $prompt];
 }];
 
-addMenu($menus, "webservice", "Runs webservice", static function ($index, $input) use ($argv) {
+$menus[] = ["id" => 5, "name" => "migrate", "description" => "Database migrations", "commandLine" => ["options" => ["run", "create"]], "menuCode" => static function ($index, $input, $options) use ($argv) {
+    if ($input === "0") { //Menu Option 0 - Exit
+        return ["index" => 0, "prompt" => ""];
+    }
+
+    global $rootPath;
+    global $DBA;
+
+    if (empty($DBA)) {
+        writeLine("Please setup a database connection first.");
+        readLn();
+        return ["index" => 0, "prompt" => ""];
+    }
+
+    if (!empty($options)) {
+        if ($options === "migrate:run") {
+            runMigrations($rootPath, $DBA);
+        } elseif ($options === "migrate:create") {
+            $name = $argv[2] ?? "";
+            if (empty($name)) {
+                writeLine("Please provide a migration name.");
+                return ["index" => 0, "prompt" => ""];
+            }
+            createMigration($rootPath, $name);
+        }
+        return ["index" => 0, "prompt" => ""];
+    }
+
+    switch ($index) {
+        case 1:
+            if ($input === "1") {
+                runMigrations($rootPath, $DBA);
+            } elseif ($input === "2") {
+                $name = readLn("Migration name (e.g., create_users_table): ");
+                createMigration($rootPath, $name);
+            }
+            $nextIndex = 0;
+            $prompt = "";
+            break;
+        default:
+            $nextIndex = 1;
+            $prompt = "1. Run pending migrations\n2. Create new migration\n0. Exit\nChoose: ";
+            break;
+    }
+    return ["index" => $nextIndex, "prompt" => $prompt];
+}];
+
+$webserviceCode = static function ($index, $input) use ($argv) {
     $port = $argv[2] ?? "7145";
 
     if (strpos($port, ":") !== false) {
@@ -456,7 +529,9 @@ addMenu($menus, "webservice", "Runs webservice", static function ($index, $input
 "."\e[0m";
     shell_exec("php -S {$host}:{$port} index.php");
 
-}, true,  ["options" => ["run"]]);
+};
+
+addMenu($menus, "webservice", "Runs webservice", $webserviceCode, true,  ["options" => ["run"]]);
 
 
 /**
@@ -473,6 +548,9 @@ function addMenu(&$menus, $name,  $description , $menuCode, $canShow=true, $comm
 {
     $menus[] = ["id" => count($menus)+1, "name" => $name, "menuCode" => $menuCode, "show" => $canShow, "description" => $description, "commandLine" => $commandLineOptions];
 }
+
+addMenu($menus, "init", "Create index.php", $initializeCode, false, ["options" => ["run"]]);
+addMenu($menus, "start", "Runs webservice", $webserviceCode, false, ["options" => ["run"]]);
 
 
 /**
@@ -540,6 +618,11 @@ if (count($argv) === 1) {
         }
     }
 
+    $command = $argv[1];
+    if (in_array($command, ['init', 'start', 'migrate'])) {
+        $command .= ':run';
+    }
+
     if (isset($argv[1])) {
         writeLine("Running: " . $argv[0] . " " . $argv[1]);
     }
@@ -553,9 +636,13 @@ if (count($argv) === 1) {
 
         $found = false;
         foreach ($options as $oid => $option) {
-            if ($option["command"] === $argv[1]) {
+            if ($option["command"] === $command) {
                 call_user_func($option["function"], 0, "", $option["command"]);
+                $found = true;
             }
+        }
+        if (!$found) {
+            writeLine("Command not found: " . $command);
         }
     }
 }
