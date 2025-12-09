@@ -52,7 +52,7 @@ class Annotation
      */
     final public function getFunctions(): array
     {
-        $allFunctions =  get_defined_functions(true);
+        $allFunctions =  get_defined_functions();
         return $allFunctions["user"];
     }
 
