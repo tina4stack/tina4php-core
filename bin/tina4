@@ -18,6 +18,7 @@ $projectRoot = str_replace(DIRECTORY_SEPARATOR . "bin", "", __DIR__);
 if (empty($rootPath)) {
     $rootPath = str_replace("vendor" . DIRECTORY_SEPARATOR . "tina4stack" . DIRECTORY_SEPARATOR . "tina4php-core" . DIRECTORY_SEPARATOR . "bin" . DIRECTORY_SEPARATOR . "tina4", "", __FILE__);
     $rootPath = str_replace("bin" . DIRECTORY_SEPARATOR . "tina4", "", $rootPath);
+    $rootPath = str_replace("vendor" . DIRECTORY_SEPARATOR, "", $rootPath);
 }
 
 require_once "{$rootPath}vendor/autoload.php";
@@ -49,45 +50,15 @@ function readLn($prefix = "")
     }
 }
 
-$initializeCode = static function ($index, $input, $options) {
-    function configureComposerJson($composerFile)
-    {
-        $composer = json_decode(file_get_contents($composerFile), true);
-        $scripts = ["tina4" => "tina4",
-                "tina4service" => "tina4service",
-                "test" => "@tina4 tests:run",
-                "test:verbose" => "@tina4 tests:verbose",
-                "init" => "@tina4 init",
-                "start" => "@tina4 webservice:run",
-                "start-service" => "@tina4service",
-                "migrate" => "@tina4 migrate:run",
-                "migrate:create" => "@tina4 migrate:create"];
-        $classMap = ["src/*", "src/app/*", "src/orm/*", "src/routes/*"];
-        $psr4 = ["\\" => ["src/", "src/app/", "src/orm/", "src/routes"]];
-        $config = ["process-timeout" => 0];
-        if (!isset($composer["scripts"])) {
-            $composer["scripts"] = $scripts;
-            $composer["classmap"] = $classMap;
-            $composer["autoload"] = ["psr-4" => $psr4];
-            $composer["config"] = $config;
-        }
-        file_put_contents($composerFile, str_replace("\/", "/", json_encode($composer, JSON_PRETTY_PRINT)));
-    }
-
-    global $rootPath;
-    global $projectRoot;
-    if ($input === "0") { //Menu Option 0 - Exit
-        return ["index" => 0, "prompt" => ""];
-    }
-
-    if (!empty($options)) {
-        if ($options === "initialize:run" || $options === "init") {
-            $index = 1;
-            $input = "y";
-
-            configureComposerJson($rootPath . "composer.json");
-        }
-    }
+/**
+ * @param mixed $index
+ * @param mixed $input
+ * @param array|string $rootPath
+ * @param array|string $projectRoot
+ * @return array
+ */
+function setupComposerFileAndCopyFiles(mixed $index, mixed $input, array|string $rootPath, array|string $projectRoot): array
+{
     switch ($index) {
         case 1:
             if ($input === "" || strtolower($input) === "y") {
@@ -95,14 +66,14 @@ $initializeCode = static function ($index, $input, $options) {
                     if (!file_exists($rootPath . "src")) {
                         $foldersToCopy = ["src/public", "src/app", "src/routes", "src/templates", "src/orm", "src/services", "src/scss"];
                         foreach ($foldersToCopy as $id => $folder) {
-                            if (!file_exists($rootPath. DIRECTORY_SEPARATOR . $folder)) {
-                                \Tina4\Utilities::recurseCopy($projectRoot .DIRECTORY_SEPARATOR. $folder, $rootPath.DIRECTORY_SEPARATOR . $folder);
+                            if (!file_exists($rootPath . DIRECTORY_SEPARATOR . $folder)) {
+                                \Tina4\Utilities::recurseCopy($projectRoot . DIRECTORY_SEPARATOR . $folder, $rootPath . DIRECTORY_SEPARATOR . $folder);
                             }
                         }
                     }
 
-                    if (file_exists($rootPath . DIRECTORY_SEPARATOR.".htaccess")) {
-                        $htaccessContent = file_get_contents($rootPath.DIRECTORY_SEPARATOR.".htaccess");
+                    if (file_exists($rootPath . DIRECTORY_SEPARATOR . ".htaccess")) {
+                        $htaccessContent = file_get_contents($rootPath . DIRECTORY_SEPARATOR . ".htaccess");
                         if (strpos($htaccessContent, "#Block access") === false) {
                             $htaccessContent .= '#Block access to .env and other files
 
@@ -137,14 +108,14 @@ RewriteRule ^(.*)$ index.php [QSA,L]
 #Add ability to get the authorization headers on the webserver
 SetEnvIf Authorization .+ HTTP_AUTHORIZATION=$0';
                         }
-                        file_put_contents($rootPath.DIRECTORY_SEPARATOR.".htaccess", $htaccessContent);
+                        file_put_contents($rootPath . DIRECTORY_SEPARATOR . ".htaccess", $htaccessContent);
                     } else {
-                        copy($projectRoot . DIRECTORY_SEPARATOR.".htaccess", $rootPath . DIRECTORY_SEPARATOR.".htaccess");
+                        copy($projectRoot . DIRECTORY_SEPARATOR . ".htaccess", $rootPath . DIRECTORY_SEPARATOR . ".htaccess");
                     }
 
                     $nextIndex = 0;
                     $prompt = "";
-                    $indexContent = '<?php' . PHP_EOL . 'require_once "./vendor/autoload.php";'. PHP_EOL.'\Tina4\Initialize();' . PHP_EOL. PHP_EOL . '$config = new \Tina4\Config(static function (\Tina4\Config $config){'.PHP_EOL.'  //Your own config initializations '.PHP_EOL.'});'. PHP_EOL . PHP_EOL . 'echo (new \Tina4\Tina4Php($config));';
+                    $indexContent = '<?php' . PHP_EOL . 'require_once "./vendor/autoload.php";' . PHP_EOL . '\Tina4\Initialize();' . PHP_EOL . PHP_EOL . '$config = new \Tina4\Config(static function (\Tina4\Config $config){' . PHP_EOL . '  //Your own config initializations ' . PHP_EOL . '});' . PHP_EOL . PHP_EOL . 'echo (new \Tina4\Tina4Php($config));';
                     file_put_contents($rootPath . DIRECTORY_SEPARATOR . "index.php", $indexContent);
                 } else {
                     $nextIndex = 0;
@@ -165,6 +136,48 @@ SetEnvIf Authorization .+ HTTP_AUTHORIZATION=$0';
             break;
     }
     return ["index" => $nextIndex, "prompt" => $prompt];
+}
+
+$initializeCode = static function ($index, $input, $options) {
+    function configureComposerJson($composerFile)
+    {
+        $composer = json_decode(file_get_contents($composerFile), true);
+        $scripts = ["tina4" => "tina4",
+                "tina4service" => "tina4service",
+                "test" => "@tina4 tests:run",
+                "test:verbose" => "@tina4 tests:verbose",
+                "setup" => "@tina4 init:run",
+                "start" => "@tina4 webservice:run",
+                "start-service" => "@tina4service",
+                "migrate" => "@tina4 migrate:run",
+                "migrate:create" => "@tina4 migrate:create"];
+        $classMap = ["src/*", "src/app/*", "src/orm/*", "src/routes/*"];
+        $psr4 = ["\\" => ["src/", "src/app/", "src/orm/", "src/routes"]];
+        $config = ["process-timeout" => 0];
+        if (!isset($composer["scripts"])) {
+            $composer["scripts"] = $scripts;
+            $composer["classmap"] = $classMap;
+            $composer["autoload"] = ["psr-4" => $psr4];
+            $composer["config"] = $config;
+        }
+        file_put_contents($composerFile, str_replace("\/", "/", json_encode($composer, JSON_PRETTY_PRINT)));
+    }
+
+    global $rootPath;
+    global $projectRoot;
+    if ($input === "0") { //Menu Option 0 - Exit
+        return ["index" => 0, "prompt" => ""];
+    }
+
+    if (!empty($options)) {
+        if ($options === "initialize:run" || $options === "init:run") {
+            $index = 1;
+            $input = "y";
+
+            configureComposerJson($rootPath . "composer.json");
+        }
+    }
+    return setupComposerFileAndCopyFiles($index, $input, $rootPath, $projectRoot);
 };
 
 $menus[] = ["id" => 1, "name" => "initialize", "description" => "Create index.php", "commandLine" => ["options" => ["run"]], "menuCode" => $initializeCode];
