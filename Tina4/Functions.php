@@ -10,7 +10,9 @@ namespace Tina4;
 
 
 //Get the sub folders etc using the data class
-(new Data());
+if (class_exists(Data::class, true)) {
+    (new Data());
+}
 
 /**
  * Initialize function loads the library for use
